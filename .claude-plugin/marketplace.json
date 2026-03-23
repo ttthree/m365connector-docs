@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "m365connector-docs",
+  "description": "M365 Connector Research skill — gives Claude dual-backend search across Microsoft 365 data and the public web.",
+  "owner": {
+    "name": "ttthree"
+  },
+  "plugins": [
+    {
+      "name": "m365connector",
+      "description": "M365 Connector Research skill — dual-backend search across Microsoft 365 data (emails, files, Teams, calendar, people) and the public web via Lumina.",
+      "category": "productivity",
+      "source": ".",
+      "homepage": "https://ttthree.github.io/m365connector-docs/"
+    }
+  ]
+}
