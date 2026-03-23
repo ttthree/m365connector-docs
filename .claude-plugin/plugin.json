@@ -1,0 +1,10 @@
+{
+  "name": "m365connector",
+  "description": "M365 Connector Research skill — gives Claude dual-backend search across Microsoft 365 data and the public web.",
+  "version": "1.0.0",
+  "author": {
+    "name": "ttthree"
+  },
+  "keywords": ["microsoft", "m365", "teams", "outlook", "calendar", "onedrive", "sharepoint", "mcp", "research"],
+  "skills": "./skills/"
+}

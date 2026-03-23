@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M365 Connector — AI agent bridge to Microsoft 365</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400&family=DM+Mono:wght@400&display=swap');
+
+    :root {
+      --bg: #faf9f7;
+      --text: #2c2a28;
+      --text-dim: #8a8580;
+      --text-light: #b0aaa4;
+      --accent: #0078d4;
+      --accent-hover: #005a9e;
+      --border: #e8e4e0;
+      --surface: #f2f0ed;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 6vh 2rem 8vh;
+      opacity: 0;
+      animation: fadeUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-weight: 200;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 0.3em;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+      margin-top: 1.2em;
+    }
+
+    .intro {
+      font-weight: 300;
+      font-size: clamp(0.88rem, 1.3vw, 0.95rem);
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    h2 {
+      font-weight: 300;
+      font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin: 3rem 0 1.5rem;
+    }
+
+    h3 {
+      font-weight: 400;
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      letter-spacing: 0.04em;
+      color: var(--text);
+      margin: 2.5rem 0 0.6rem;
+    }
+
+    p {
+      font-weight: 300;
+      font-size: clamp(0.88rem, 1.3vw, 0.95rem);
+      color: var(--text);
+      margin-bottom: 0.8em;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.3s ease; }
+    a:hover { color: var(--accent-hover); }
+
+    code {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85em;
+      background: var(--surface);
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    pre {
+      background: var(--surface);
+      padding: 1.2em 1.4em;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 1em 0 1.5em;
+      border: 1px solid var(--border);
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .callout {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 1em 1.4em;
+      border-radius: 4px;
+      margin: 0 0 2rem;
+      font-weight: 300;
+      font-size: clamp(0.84rem, 1.2vw, 0.92rem);
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+    .callout strong { color: var(--text); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0 1.5em;
+      font-size: clamp(0.82rem, 1.2vw, 0.9rem);
+    }
+
+    th {
+      font-weight: 400;
+      text-align: left;
+      padding: 0.6em 0.8em;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    td {
+      font-weight: 300;
+      padding: 0.6em 0.8em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    ul, ol {
+      font-weight: 300;
+      font-size: clamp(0.88rem, 1.3vw, 0.95rem);
+      margin: 0.5em 0 1.2em 1.5em;
+      color: var(--text);
+    }
+
+    li { margin-bottom: 0.4em; }
+
+    .diagram {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+      background: var(--surface);
+      padding: 1.2em 1.4em;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin: 1em 0 1.5em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .anchor { text-decoration: none; color: var(--text-light); margin-left: 0.3em; opacity: 0; transition: opacity 0.3s; font-weight: 200; }
+    h1:hover .anchor, h2:hover .anchor, h3:hover .anchor, h4:hover .anchor { opacity: 1; }
+    .anchor:hover { color: var(--accent); }
+
+    .badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.15em 0.5em;
+      border-radius: 3px;
+      background: var(--accent);
+      color: #fff;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      margin-left: 0.4em;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin-left: 0;
+      padding-left: 0;
+    }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.4em;
+      margin-bottom: 1.2em;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.05em;
+      width: 1.6em;
+      height: 1.6em;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: center;
+      line-height: 1.6em;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-dim);
+    }
+
+    .copy-wrap {
+      position: relative;
+    }
+    .copy-wrap pre {
+      padding-right: 3em;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 0.6em;
+      right: 0.6em;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.25em 0.5em;
+      cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .copy-btn.copied {
+      color: #2ea043;
+      border-color: #2ea043;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1 id="m365-connector">M365 Connector</h1>
+    <p style="font-size: 0.75rem; color: var(--text-light); font-weight: 200; margin-bottom: 2rem;">v1.2.4 &middot; Updated Mar 23, 2026</p>
+
+    <div class="callout"><strong>Browser extension + MCP server</strong> that lets AI agents search, read, and interact with your Microsoft 365 data. Works with Claude Code, Claude Desktop, and any MCP-compatible client.</div>
+
+    <p class="intro">Install the Chrome extension, start the MCP server, and your AI agent gets full access to M365 — emails, files, Teams chats, calendar events, and people directory. No API keys, no app registrations. Tokens are captured passively from the browser.</p>
+
+    <!-- WHAT IT DOES -->
+    <h2 id="tools">MCP Tools</h2>
+
+    <p>Five tools exposed to any MCP client:</p>
+
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>search</code></td><td>Search across emails, files, Teams chats, calendar events, and external connectors</td></tr>
+        <tr><td><code>open</code></td><td>Read best-effort content for a search result (via opaque read handle)</td></tr>
+        <tr><td><code>whoami</code></td><td>Query current signed-in user profile via Microsoft Graph <code>/me</code></td></tr>
+        <tr><td><code>find_people</code></td><td>Find directory people with multi-field filters</td></tr>
+        <tr><td><code>count_people</code></td><td>Count directory people matching filters</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ARCHITECTURE -->
+    <h2 id="architecture">Architecture</h2>
+
+    <div class="diagram">MCP Client          MCP Server (daemon)        Browser Extension
+(Claude Code)       (Node.js)                  (Chrome/Edge MV3)
+
+  HTTP :52366         WebSocket :52365
+  ───────────►  ◄──────────────────►
+  Streamable HTTP     IPC bridge              Captures tokens,
+  transport           (localhost)             executes API calls</div>
+
+    <p>The MCP server runs as a long-lived process. The browser extension connects to it over WebSocket and handles all M365 API calls using tokens passively captured from the browser.</p>
+
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Extension</td><td>Chrome/Edge Manifest V3, captures Substrate + Graph tokens</td></tr>
+        <tr><td>MCP Server</td><td>Node.js, Streamable HTTP transport on port 52366</td></tr>
+        <tr><td>IPC</td><td>WebSocket on port 52365 (localhost only)</td></tr>
+        <tr><td>Auth</td><td>Passive token capture from browser sessions — no app registration needed</td></tr>
+        <tr><td>APIs</td><td>Microsoft Substrate + Microsoft Graph</td></tr>
+      </tbody>
+    </table>
+
+    <!-- INSTALL -->
+    <h2 id="install">Install</h2>
+
+    <h3 id="install-extension">1. Install the browser extension</h3>
+
+    <p>Install from the Chrome Web Store:</p>
+
+    <p><a href="https://chromewebstore.google.com/detail/m365-connector/igchbccebjlcdogcboebgldjdihkdmbb" style="font-family: 'DM Mono', monospace; font-size: 0.85rem;">Chrome Web Store &rarr; M365 Connector</a></p>
+
+    <p>Works on Chrome and Edge. After installing, the extension automatically captures auth tokens from your M365 session. Click the extension icon to verify — <strong>Substrate</strong> should show <strong>Valid</strong>.</p>
+
+    <h3 id="install-server">2. Start the MCP server</h3>
+
+    <p>Run with npx (no install needed):</p>
+
+    <div class="copy-wrap">
+      <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+      <pre><code>npx m365connector</code></pre>
+    </div>
+
+    <p>Or install globally:</p>
+
+    <div class="copy-wrap">
+      <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+      <pre><code>npm install -g m365connector && m365connector</code></pre>
+    </div>
+
+    <p>You should see:</p>
+
+    <pre><code>[m365connector/ws] listening on ws://127.0.0.1:52365
+[m365connector] MCP HTTP listening on http://127.0.0.1:52366/mcp</code></pre>
+
+    <h3 id="configure-client">3. Configure your MCP client</h3>
+
+    <p>Add to your MCP config (e.g. <code>~/.claude/mcp.json</code>):</p>
+
+    <div class="copy-wrap">
+      <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+      <pre><code>{
+  "mcpServers": {
+    "m365-connector": {
+      "type": "http",
+      "url": "http://127.0.0.1:52366/mcp"
+    }
+  }
+}</code></pre>
+    </div>
+
+    <p>Restart your MCP client to pick up the config.</p>
+
+    <!-- PREREQUISITES -->
+    <h2 id="prerequisites">Prerequisites</h2>
+
+    <ul>
+      <li>Node.js 18+</li>
+      <li>Chrome or Edge browser</li>
+      <li>An M365 account (work or school)</li>
+    </ul>
+
+    <!-- USAGE -->
+    <h2 id="usage">Usage</h2>
+
+    <p>Once connected, ask your AI agent to search M365 naturally:</p>
+
+    <pre><code>&gt; Search my email for messages about the quarterly review
+&gt; Find files related to Project Alpha
+&gt; Look up John in the company directory
+&gt; Search Teams chats about the deployment issue
+&gt; What meetings do I have tomorrow?</code></pre>
+
+    <p>The agent uses <code>search</code> to find results, then <code>open</code> with a result's <code>_readHandle</code> to fetch full content. It can also call <code>whoami</code>, <code>find_people</code>, and <code>count_people</code> for directory and profile lookups.</p>
+
+    <!-- TOOLS REFERENCE -->
+    <h2 id="tools-reference">Tools reference</h2>
+
+    <h3 id="tool-search">search</h3>
+
+    <p>Search across M365 data sources.</p>
+
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>query</code></td><td>string</td><td>yes</td><td></td><td>Search query</td></tr>
+        <tr><td><code>conversation_id</code></td><td>string</td><td>yes</td><td></td><td>Identifier for grouping related requests</td></tr>
+        <tr><td><code>source</code></td><td>string</td><td>no</td><td><code>all</code></td><td><code>all</code>, <code>email</code>, <code>files</code>, <code>chat</code>, <code>events</code>, <code>external</code></td></tr>
+        <tr><td><code>connector</code></td><td>string</td><td>no</td><td></td><td>External connector name (when source=<code>external</code>)</td></tr>
+        <tr><td><code>size</code></td><td>integer</td><td>no</td><td>10</td><td>Results per page (1&ndash;25)</td></tr>
+        <tr><td><code>from</code></td><td>integer</td><td>no</td><td>0</td><td>Pagination offset</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="tool-open">open</h3>
+
+    <p>Read the content of a search result.</p>
+
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>read_handle</code></td><td>string</td><td>yes</td><td>Opaque handle from a search result's <code>_readHandle</code> field</td></tr>
+        <tr><td><code>conversation_id</code></td><td>string</td><td>yes</td><td>Same conversation ID used in the originating search</td></tr>
+      </tbody>
+    </table>
+
+    <p>Returns content with a <code>completeness</code> field: <code>full</code>, <code>partial</code>, or <code>snippet</code>.</p>
+
+    <h3 id="tool-whoami">whoami</h3>
+
+    <p>Get the current signed-in user's basic profile from Graph.</p>
+
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>conversation_id</code></td><td>string</td><td>yes</td><td></td><td>Conversation identifier</td></tr>
+        <tr><td><code>direct_reports_size</code></td><td>integer</td><td>no</td><td>30</td><td>Max direct reports to return (1&ndash;100)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Returns display name, alias, email/UPN, title, department, office, phones, and best-effort <code>manager</code> and <code>directReports</code> info when directory scopes are available.</p>
+
+    <h3 id="tool-find-people">find_people</h3>
+
+    <p>Find people via Graph directory query.</p>
+
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>conversation_id</code></td><td>string</td><td>yes</td><td></td><td>Conversation identifier</td></tr>
+        <tr><td><code>query</code></td><td>string</td><td>no</td><td></td><td>Free-text query across person fields</td></tr>
+        <tr><td><code>alias</code></td><td>string</td><td>no</td><td></td><td>Filter by alias (<code>mailNickname</code>)</td></tr>
+        <tr><td><code>principalName</code></td><td>string</td><td>no</td><td></td><td>Filter by user principal name</td></tr>
+        <tr><td><code>displayName</code></td><td>string</td><td>no</td><td></td><td>Filter by display name</td></tr>
+        <tr><td><code>department</code></td><td>string</td><td>no</td><td></td><td>Filter by department (prefix match)</td></tr>
+        <tr><td><code>office</code></td><td>string</td><td>no</td><td></td><td>Filter by office location (prefix match)</td></tr>
+        <tr><td><code>title</code></td><td>string</td><td>no</td><td></td><td>Filter by job title (prefix match)</td></tr>
+        <tr><td><code>size</code></td><td>integer</td><td>no</td><td>20</td><td>Max people to return (1&ndash;50)</td></tr>
+        <tr><td><code>include_direct_reports</code></td><td>boolean</td><td>no</td><td>false</td><td>Include direct reports for each result</td></tr>
+        <tr><td><code>direct_reports_size</code></td><td>integer</td><td>no</td><td>30</td><td>Max direct reports per result (1&ndash;100)</td></tr>
+      </tbody>
+    </table>
+
+    <p>At least one filter parameter is required. Returns <code>{ filters, results, total }</code>.</p>
+
+    <h3 id="tool-count-people">count_people</h3>
+
+    <p>Count people matching directory filters without returning full results.</p>
+
+    <table>
+      <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>conversation_id</code></td><td>string</td><td>yes</td><td>Conversation identifier</td></tr>
+        <tr><td><code>query</code></td><td>string</td><td>no</td><td>Free-text query across person fields</td></tr>
+        <tr><td><code>alias</code></td><td>string</td><td>no</td><td>Filter by alias</td></tr>
+        <tr><td><code>principalName</code></td><td>string</td><td>no</td><td>Filter by user principal name</td></tr>
+        <tr><td><code>displayName</code></td><td>string</td><td>no</td><td>Filter by display name</td></tr>
+        <tr><td><code>department</code></td><td>string</td><td>no</td><td>Filter by department (prefix match)</td></tr>
+        <tr><td><code>office</code></td><td>string</td><td>no</td><td>Filter by office location (prefix match)</td></tr>
+        <tr><td><code>title</code></td><td>string</td><td>no</td><td>Filter by job title (prefix match)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Returns <code>{ filters, count }</code>.</p>
+
+    <!-- SKILL -->
+    <h2 id="skill">Using as a Claude Code skill</h2>
+
+    <p>M365 Connector ships with a <strong>Research</strong> skill that combines M365 search with web search (Lumina) to answer questions comprehensively. The skill gives Claude full knowledge of all 5 MCP tools plus a parallel dual-backend search strategy.</p>
+
+    <ol class="steps">
+      <li>
+        <strong>Install the extension + server</strong> — follow the <a href="#install">install steps</a> above.
+      </li>
+      <li>
+        <strong>Install the skill</strong> — use Claude Code's plugin system:
+        <pre><code>/plugin marketplace add ttthree/m365connector-docs
+/plugin install research@m365connector-docs</code></pre>
+        <p style="margin-top: 0.8em; font-size: 0.85rem; color: var(--text-dim);">Or manually download <code>SKILL.md</code>:</p>
+        <pre><code>mkdir -p .claude/skills/research
+curl -fsSL https://raw.githubusercontent.com/ttthree/m365connector-docs/main/skills/research/SKILL.md \
+  -o .claude/skills/research/SKILL.md</code></pre>
+      </li>
+      <li>
+        <strong>Use it</strong> — Claude Code discovers the skill automatically. Just ask:
+        <pre><code>&gt; What emails did I get from my manager today?
+&gt; Summarize what's been happening on Project Alpha
+&gt; Who is Alice Smith? What team is she on?
+&gt; Find files related to the quarterly report</code></pre>
+      </li>
+    </ol>
+
+    <div class="callout"><strong>Dual-backend search.</strong> The Research skill always searches both M365 (internal data) and Lumina (public web) in parallel, then synthesizes a comprehensive answer. Use <code>--high</code> for exhaustive research mode.</div>
+
+    <!-- ENVIRONMENT VARIABLES -->
+    <h2 id="env">Environment variables</h2>
+
+    <table>
+      <thead>
+        <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>M365C_MCP_PORT</code></td><td>52366</td><td>HTTP port for MCP clients</td></tr>
+        <tr><td><code>M365C_WS_PORT</code></td><td>52365</td><td>WebSocket port for extension IPC</td></tr>
+      </tbody>
+    </table>
+
+    <!-- SECURITY -->
+    <h2 id="security">Security</h2>
+
+    <ul>
+      <li>Both servers bind to <code>127.0.0.1</code> only — not accessible from the network</li>
+      <li>WebSocket accepts connections only from <code>chrome-extension://</code> origins</li>
+      <li>Auth tokens are captured passively and stored in Chrome's local storage</li>
+      <li>Read handles are server-issued opaque UUIDs with 30-minute TTL</li>
+    </ul>
+
+    <!-- LIMITATIONS -->
+    <h2 id="limitations">Limitations</h2>
+
+    <ul>
+      <li><strong>Token refresh</strong> — requires an active M365 session in the browser (you must be logged in). The extension auto-refreshes tokens before expiry.</li>
+      <li><strong>Chat content</strong> — only search snippets are returned (full thread reading requires Graph <code>Chat.Read</code> scope).</li>
+      <li><strong>File content</strong> — returns extracted summaries, not full document bytes.</li>
+    </ul>
+
+    <!-- TROUBLESHOOTING -->
+    <h2 id="troubleshooting">Troubleshooting</h2>
+
+    <table>
+      <thead>
+        <tr><th>Issue</th><th>Fix</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Extension shows "No token"</td><td>Open any M365 page (e.g. <code>outlook.office.com</code>) and wait a few seconds for the extension to capture tokens</td></tr>
+        <tr><td>MCP server won't start</td><td>Check that port 52366 is available: <code>lsof -i :52366</code></td></tr>
+        <tr><td>Claude Code can't connect</td><td>Verify MCP config in <code>~/.claude/mcp.json</code> and restart Claude Code</td></tr>
+        <tr><td>Search returns no results</td><td>Ensure the extension shows valid tokens — click the extension icon to check</td></tr>
+        <tr><td>WebSocket connection refused</td><td>Make sure the MCP server is running (<code>npx m365connector</code>)</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <script>
+    // Anchor links
+    document.querySelectorAll('h1, h2, h3, h4').forEach(function(h) {
+      if (!h.id) h.id = h.textContent.trim().toLowerCase().replace(/[^\w]+/g, '-').replace(/-$/, '');
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.className = 'anchor';
+      a.textContent = '#';
+      h.appendChild(a);
+    });
+
+    // Copy button
+    function copyCmd(btn) {
+      const code = btn.parentElement.querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+  </script>
+
+  <!-- Ambient nebula effect -->
+  <script>
+    (() => {
+      const PALETTE = [
+        [0, 120, 212],
+        [0, 99, 177],
+        [16, 110, 190],
+        [0, 150, 214],
+        [80, 40, 170],
+        [0, 90, 158],
+        [50, 130, 200],
+        [30, 60, 150],
+      ];
+
+      const canvas = document.createElement('canvas');
+      canvas.style.cssText =
+        'position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none';
+      document.body.prepend(canvas);
+
+      const ctx = canvas.getContext('2d');
+      let W, H, cx, cy;
+
+      function measure() {
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
+        const h1 = document.querySelector('h1');
+        if (h1) {
+          const r = h1.getBoundingClientRect();
+          cx = r.left + r.width / 2;
+          cy = r.top + scrollY + r.height / 2;
+        } else {
+          cx = W / 2;
+          cy = H * 0.12;
+        }
+      }
+
+      class Wisp {
+        constructor() { this.reset(true); }
+
+        reset(init) {
+          this.x = cx + (Math.random() - 0.5) * Math.min(W * 0.5, 480);
+          this.y = cy + (Math.random() - 0.5) * 100;
+          this.radius = 70 + Math.random() * 150;
+          this.life = init ? Math.random() * 550 : 0;
+          this.maxLife = 420 + Math.random() * 480;
+          this.vx = (Math.random() - 0.5) * 0.13;
+          this.vy = (Math.random() - 0.5) * 0.04;
+          this.angle = Math.random() * Math.PI * 2;
+          this.aSpeed = 0.0014 + Math.random() * 0.0028;
+          this.color = PALETTE[(Math.random() * PALETTE.length) | 0];
+          this.baseA = 0.038 + Math.random() * 0.05;
+        }
+
+        update() {
+          if (++this.life > this.maxLife) { this.reset(false); return; }
+          this.angle += this.aSpeed;
+          this.x += this.vx + Math.sin(this.angle) * 0.15;
+          this.y += this.vy + Math.cos(this.angle * 0.7) * 0.055;
+          this.radius += 0.05;
+        }
+
+        draw() {
+          const p = this.life / this.maxLife;
+          let a = this.baseA;
+          if (p < 0.15) a *= p / 0.15;
+          else if (p > 0.6) a *= (1 - p) / 0.4;
+
+          const [r, g, b] = this.color;
+          const rad = this.radius;
+          const gr = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, rad);
+          gr.addColorStop(0,    `rgba(${r},${g},${b},${a * 2.4})`);
+          gr.addColorStop(0.25, `rgba(${r},${g},${b},${a * 1.4})`);
+          gr.addColorStop(0.6,  `rgba(${r},${g},${b},${a * 0.35})`);
+          gr.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+          ctx.fillStyle = gr;
+          ctx.fillRect(this.x - rad, this.y - rad, rad * 2, rad * 2);
+        }
+      }
+
+      measure();
+      addEventListener('resize', measure);
+
+      const wisps = Array.from({ length: 12 }, () => new Wisp());
+
+      (function render() {
+        const fade = Math.max(0, 1 - Math.max(0, scrollY - 40) / 240);
+
+        ctx.clearRect(0, 0, W, H);
+
+        if (fade > 0.002) {
+          ctx.globalAlpha = fade;
+          for (const w of wisps) { w.update(); w.draw(); }
+          ctx.globalAlpha = 1;
+        } else {
+          for (const w of wisps) w.update();
+        }
+
+        requestAnimationFrame(render);
+      })();
+    })();
+  </script>
+</body>
+</html>
