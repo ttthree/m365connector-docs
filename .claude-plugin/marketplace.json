@@ -10,7 +10,11 @@
       "name": "m365connector",
       "description": "M365 Connector Research skill — dual-backend search across Microsoft 365 data (emails, files, Teams, calendar, people) and the public web via Lumina.",
       "category": "productivity",
-      "source": ".",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/ttthree/m365connector-docs.git",
+        "sha": "46d708a21589b4af792b1b92c97763bfcb06185f"
+      },
       "homepage": "https://ttthree.github.io/m365connector-docs/"
     }
   ]
